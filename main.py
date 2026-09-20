@@ -13,7 +13,17 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QObject, QRectF, Qt, QRunnable, QThreadPool, QTimer, Signal
+from PySide6.QtCore import (
+    QEvent,
+    QLockFile,
+    QObject,
+    QRectF,
+    Qt,
+    QRunnable,
+    QThreadPool,
+    QTimer,
+    Signal,
+)
 from PySide6.QtGui import QColor, QPainter, QPen, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QApplication,
@@ -22,6 +32,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -492,6 +503,15 @@ def main() -> None:
     icon_path = _resource("icon.ico")
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))
+    lock = QLockFile(str(CONFIG_PATH.with_suffix(".lock")))
+    if not lock.tryLock(100):
+        QMessageBox.information(
+            None,
+            "API Usage Monitor",
+            "API Usage Monitor is already running.",
+        )
+        sys.exit(0)
+
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
