@@ -102,6 +102,15 @@ QPushButton#closeCard {
     padding: 0px 4px;
 }
 QPushButton#closeCard:hover { color: #e57373; }
+QPushButton#winBtn, QPushButton#winClose {
+    background-color: transparent;
+    color: #7a7f8a;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 0px 5px;
+}
+QPushButton#winBtn:hover { background-color: #444a58; color: #e6e6e6; }
+QPushButton#winClose:hover { background-color: #c0392b; color: #ffffff; }
 QComboBox {
     background-color: #353945;
     border: none;
@@ -296,6 +305,8 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("API Usage Monitor")
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self._drag_pos = None
 
         self._cards: dict[str, ServiceCard] = {}
         self._signals = FetchSignals()
@@ -334,12 +345,28 @@ class MainWindow(QMainWindow):
         self.refresh_btn = QPushButton("Refresh")
         self.refresh_btn.clicked.connect(self.refresh_all)
 
+        # Frameless window controls, shown only after the window is clicked
+        self.min_btn = QPushButton("–")
+        self.min_btn.setObjectName("winBtn")
+        self.min_btn.setFixedSize(22, 18)
+        self.min_btn.setToolTip("Minimize")
+        self.min_btn.clicked.connect(self.showMinimized)
+        self.win_close_btn = QPushButton("×")
+        self.win_close_btn.setObjectName("winClose")
+        self.win_close_btn.setFixedSize(22, 18)
+        self.win_close_btn.setToolTip("Close")
+        self.win_close_btn.clicked.connect(self.close)
+        self.min_btn.hide()
+        self.win_close_btn.hide()
+
         header = QHBoxLayout()
         header.setSpacing(6)
         header.addWidget(self.select_combo)
         header.addStretch(1)
         header.addWidget(self.updated_label)
         header.addWidget(self.refresh_btn)
+        header.addWidget(self.min_btn)
+        header.addWidget(self.win_close_btn)
 
         # Cards row (+ empty-state hint)
         self.hint_label = QLabel("Use “+ Select” to show a service")
@@ -422,6 +449,31 @@ class MainWindow(QMainWindow):
         self.hint_label.setVisible(not self._cards)
         n = max(len(self._cards), 1)
         self.setFixedSize(16 + n * (CARD_WIDTH + 6), WINDOW_HEIGHT)
+
+    # -- frameless window: drag + on-demand min/close buttons --
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            self._set_win_buttons_visible(True)
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        if self._drag_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            self.move(event.globalPosition().toPoint() - self._drag_pos)
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:  # noqa: N802
+        self._drag_pos = None
+        super().mouseReleaseEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        self._set_win_buttons_visible(False)
+        super().leaveEvent(event)
+
+    def _set_win_buttons_visible(self, visible: bool) -> None:
+        self.min_btn.setVisible(visible)
+        self.win_close_btn.setVisible(visible)
 
     def eventFilter(self, obj, event) -> bool:
         # Clicking the read-only "+ Select" text opens the dropdown
