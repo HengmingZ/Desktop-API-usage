@@ -32,6 +32,7 @@ uv run python main.py
 ## Build the exe
 
 ```sh
-uv run pyinstaller --onefile --windowed --name APIUsageMonitor main.py
+uv run python make_icon.py   # regenerate icon.ico (optional)
+uv run pyinstaller --onefile --windowed --icon icon.ico --add-data "icon.ico;." --name APIUsageMonitor main.py
 # output: dist/APIUsageMonitor.exe
 ```

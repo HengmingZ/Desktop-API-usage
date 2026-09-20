@@ -478,9 +478,20 @@ class MainWindow(QMainWindow):
             self.updated_label.setText(datetime.now().strftime("%H:%M"))
 
 
+def _resource(name: str) -> Path:
+    """Locate a bundled resource, both from source and inside the frozen exe."""
+    base = getattr(sys, "_MEIPASS", None) or Path(__file__).parent
+    return Path(base) / name
+
+
 def main() -> None:
+    from PySide6.QtGui import QIcon
+
     app = QApplication(sys.argv)
     app.setStyleSheet(STYLE)
+    icon_path = _resource("icon.ico")
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
